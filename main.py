@@ -361,6 +361,17 @@ def start_message(message):
                          )
 
 
+@bot.message_handler(commands=['stats'])
+def start_message(message):
+    if str(message.from_user.id) in config.MANAGER_ID:
+        threading.Thread(daemon=True, target=functions.count_users_by_categories, args=(message.from_user.id,)).start()
+    
+    else:
+        bot.send_message(chat_id=message.chat.id,
+                         text='Доступ запрещен',
+                         )
+        
+
 @bot.message_handler(content_types=['text'])
 @bot.channel_post_handler()
 def channel_post(message):

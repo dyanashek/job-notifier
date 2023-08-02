@@ -639,3 +639,85 @@ def text_subscriptions_by_command(subscriptions):
         subscriptions_text = 'У вас пока нет оформленных подписок.'
     
     return subscriptions_text
+
+
+def count_by_category(category):
+    """Checks if user already in database."""
+
+    database = sqlite3.connect("db.db")
+    cursor = database.cursor()
+
+    users = cursor.execute(f'''SELECT COUNT(id) 
+                            FROM users 
+                            WHERE subscription LIKE "%'{category}')%"
+                            ''').fetchall()[0][0]
+    
+    cursor.close()
+    database.close()
+
+    return users
+
+
+def count_users_by_categories(user_id):
+    areas = get_areas_values()
+    categories = get_categories_values()
+
+    if validate_table(areas, categories):
+        areas = get_final_areas(areas)
+        categories = get_final_categories(categories)
+
+        spread_jobs = sort_areas_categories(areas, categories)
+
+        categories_by_areas = {}
+
+        for job in spread_jobs:
+            if job[0] not in categories_by_areas.keys():
+                categories_by_areas[job[0]] = []
+            categories_by_areas[job[0]].append(job[1])
+
+        reply_text = ''
+
+        for num, info in enumerate(categories_by_areas.items()):
+            reply_text += f'\n*{num + 1}. {info[0]}:*\n'
+
+            for category in info[1]:
+                count_users = count_by_category(category)
+                reply_text +=f'- {category} (подписано пользователей: *{count_users}*)\n'
+
+            try:
+                bot.send_message(chat_id=user_id,
+                                text=reply_text,
+                                parse_mode='Markdown',
+                                disable_notification=True,
+                                )
+            except:
+                try:
+                    reply_text = reply_text.replace('*', '')
+
+                    bot.send_message(chat_id=user_id,
+                                text=reply_text,
+                                disable_notification=True,
+                                )
+                except:
+                    pass
+            
+            reply_text = ''
+        
+        try:
+            bot.send_message(chat_id=user_id,
+                             text='Выгрузка завершена.',
+                             )
+        except:
+            pass
+
+    else:
+        try:
+            bot.send_message(chat_id=user_id,
+                             text='Google таблица не соответствует формату.',
+                             )
+        except:
+            pass
+
+
+
+
